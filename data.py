@@ -8,6 +8,11 @@ class Data:
         samples = []
         with open('{0}/driving_log.csv'.format(self.data_path)) as csvfile:
             reader = csv.reader(csvfile)
+
+            # This skips the first row of the CSV file.
+            # csvreader.next() also works in Python 2.
+            next(reader)
+
             for line in reader:
                 samples.append(line)
 

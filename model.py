@@ -8,7 +8,7 @@ class DriverNet:
     def build(self):
         model = Sequential()
 
-        base_model = applications.ResNet50(weights='imagenet', include_top=False)
+        base_model = applications.VGG19(weights='imagenet', include_top=False)
         for layer in base_model.layers:
             layer.trainable = False
 
