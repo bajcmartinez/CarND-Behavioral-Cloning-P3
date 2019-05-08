@@ -37,6 +37,8 @@ class DriverNet:
                                  validation_steps=data.valid_length() / batch_size,
                                  epochs=epochs)
 
+        self.model.save("./model.h5")
+
 if __name__ == '__main__':
     net = DriverNet()
     net.build()
