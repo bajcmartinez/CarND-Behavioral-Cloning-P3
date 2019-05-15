@@ -1,6 +1,7 @@
 import cv2
 import csv
 import numpy as np
+import sklearn
 
 class Data:
     def __init__(self, batch_size=512):
@@ -39,21 +40,23 @@ class Data:
             for offset in range(0, num_samples, batch_size):
                 batch_samples = samples[offset:offset + batch_size]
 
-                gen_x = np.zeros((len(batch_samples)*3*2, 160, 320, 3))
-                gen_y = np.zeros((len(batch_samples)*3*2, 1))
+                gen_x = np.zeros((len(batch_samples)*self.augmenting_by, 160, 320, 3))
+                gen_y = np.zeros((len(batch_samples)*self.augmenting_by, 1))
                 for i, batch_sample in enumerate(batch_samples):
                     center_angle = float(batch_sample[3])
                     correction_factor = 0.2
-                    for c, correction in enumerate([-correction_factor, 0, correction_factor]):
-                        file_name = batch_sample[0].split('/')[-1]
-                        gen_x[i*self.augmenting_by+c] = cv2.imread('{0}/IMG/{1}'.format(self.data_path, file_name))
+                    # Information comes in Center, Left, Right
+                    for c, correction in enumerate([0, correction_factor, -correction_factor]):
+                        file_name = batch_sample[c].split('/')[-1]
+                        img = cv2.imread('{0}/IMG/{1}'.format(self.data_path, file_name))
+                        gen_x[i*self.augmenting_by+c] = img # cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         gen_y[i*self.augmenting_by+c] = center_angle + correction
 
-                        gen_x[i*self.augmenting_by+c+3] = np.fliplr(gen_x[i*self.augmenting_by+c])
+                        gen_x[i*self.augmenting_by+c+3] = cv2.flip(gen_x[i*self.augmenting_by+c], 1)
                         gen_y[i*self.augmenting_by+c+3] = -(center_angle + correction)
 
 
-                yield np.array(gen_x), np.array(gen_y)
+                yield sklearn.utils.shuffle(np.array(gen_x), np.array(gen_y))
 
 
     def train_generator(self):
@@ -61,3 +64,13 @@ class Data:
 
     def valid_generator(self):
         return self.generator(self.valid)
+
+
+if __name__ == '__main__':
+    data = Data(batch_size=6)
+    g = data.train_generator()
+    for x, y in g:
+        for i, img in enumerate(x):
+            cv2.imwrite("out/{}.jpg".format(i), img)
+        print('y:', y)
+        break

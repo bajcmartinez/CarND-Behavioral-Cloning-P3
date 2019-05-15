@@ -1,6 +1,7 @@
 # from keras import applications
 from keras import Sequential
 from keras.layers import Cropping2D, Dense, Lambda, Flatten, BatchNormalization, Conv2D, Dropout
+from keras.optimizers import Adam
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -19,24 +20,29 @@ class DriverNet:
         # model.add(base_model)
 
         # nvidia model
+        model.add(Conv2D(24, (5, 5), border_mode='same', activation='relu', strides=(2, 2)))
         model.add(BatchNormalization())
-        model.add(Conv2D(24, (5, 5), activation="relu", strides=(2, 2)))
-        model.add(Conv2D(36, (5, 5), activation="relu", strides=(2, 2)))
-        model.add(Conv2D(48, (5, 5), activation="relu", strides=(2, 2)))
+        model.add(Conv2D(36, (5, 5), border_mode='same', activation='relu', strides=(2, 2)))
+        model.add(BatchNormalization())
+        model.add(Conv2D(48, (5, 5), border_mode='same', activation='relu', strides=(2, 2)))
+        model.add(BatchNormalization())
 
-        model.add(Conv2D(64, (3, 3), activation="elu", strides=(1, 1)))
-        model.add(Conv2D(64, (3, 3), activation="elu", strides=(1, 1)))
+        model.add(Conv2D(64, (3, 3), border_mode='same', activation='relu', strides=(1, 1)))
+        model.add(BatchNormalization())
+        model.add(Conv2D(64, (3, 3), border_mode='same', activation='relu', strides=(1, 1)))
+        model.add(BatchNormalization())
 
-        model.add(Dropout(0.5))
         model.add(Flatten())
 
-        model.add(Dense(1164, activation='relu'))
+        model.add(Dropout(0.5))
+        # model.add(Dense(1164, activation='relu'))
         model.add(Dense(100, activation='relu'))
         model.add(Dense(50, activation='relu'))
         model.add(Dense(10, activation='relu'))
         model.add(Dense(1, activation='relu'))
 
-        model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+        optimizer = Adam(lr=0.001)
+        model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
 
         self.model = model
 
@@ -49,7 +55,17 @@ class DriverNet:
                                  steps_per_epoch=data.train_length() / batch_size,
                                  validation_data=valid_generator,
                                  validation_steps=data.valid_length() / batch_size,
-                                 epochs=epochs)
+                                 epochs=epochs,
+                                 verbose=1)
+
+        print("Saving model...")
+        self.model.save("./model.h5")
+        print("Training")
+        print(history.history.keys())
+        print('Loss:')
+        print(history.history['loss'])
+        print('Validation Loss:')
+        print(history.history['val_loss'])
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -61,9 +77,6 @@ class DriverNet:
         ax.legend(['train', 'test'], loc='upper left')
         fig.savefig('train_evol.png')
 
-        print("Saving model...")
-        self.model.save("./model.h5")
-
 if __name__ == '__main__':
     net = DriverNet()
     print("Building network...")
@@ -71,5 +84,5 @@ if __name__ == '__main__':
     print("Network Summary...")
     net.model.summary()
     print()
-    net.train(batch_size=100, epochs=5)
+    net.train(batch_size=100, epochs=3)
 
