@@ -2,7 +2,6 @@
 from keras import Sequential
 from keras.layers import Cropping2D, Dense, Lambda, Flatten, BatchNormalization, Conv2D, Dropout
 from keras.optimizers import Adam
-import matplotlib
 import matplotlib.pyplot as plt
 
 from data import Data
