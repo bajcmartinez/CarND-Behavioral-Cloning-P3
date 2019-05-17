@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import sklearn
 import matplotlib
+matplotlib.use('PS')
 import matplotlib.pyplot as plt
 
 class Data:
@@ -12,8 +13,8 @@ class Data:
 
         :param batch_size:
         """
-        self.data_path = '/opt/carnd_p3/data'
-        # self.data_path = './data'
+        # self.data_path = '/opt/carnd_p3/data'
+        self.data_path = './data'
         self.batch_size = batch_size
         self.augmenting_by = 2
         self.train = []
@@ -41,7 +42,7 @@ class Data:
 
         # From the plot we see that most of the samples are rects, so let's remove some
         zero_indices = df[df['steering'] == 0].index
-        df = df.drop(np.random.choice(zero_indices, size=int(len(zero_indices) * 0.9), replace=False))
+        df = df.drop(np.random.choice(zero_indices, size=int(len(zero_indices) * 0.95), replace=False))
 
         df['steering'].plot.hist(title='Final steering distribution', bins=100)
         plt.savefig("./output/distribution_final.png")
@@ -76,7 +77,7 @@ class Data:
         sample_x, sample_y = sklearn.utils.shuffle(sample_x, sample_y)
 
         samples = np.column_stack((sample_x, np.array(sample_y).astype(object)))
-        limit = int(len(samples) * 0.7)
+        limit = int(len(samples) * 0.8)
         self.train = samples[:limit]
         self.valid = samples[limit:]
 
@@ -115,15 +116,13 @@ class Data:
                 gen_y = np.zeros((len(batch_samples)*self.augmenting_by, 1))
                 for i, batch_sample in enumerate(batch_samples):
                     img = cv2.imread('{0}/IMG/{1}'.format(self.data_path, batch_sample[0]))
-                    gen_x[i*self.augmenting_by] = img # cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    gen_x[i*self.augmenting_by] = img
                     gen_y[i*self.augmenting_by] = batch_sample[1]
 
                     gen_x[i*self.augmenting_by+1] = cv2.flip(img, 1)
                     gen_y[i*self.augmenting_by+1] = -batch_sample[1]
 
-
                 yield sklearn.utils.shuffle(np.array(gen_x), np.array(gen_y))
-
 
     def train_generator(self):
         return self.generator(self.train)

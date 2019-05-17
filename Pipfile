@@ -13,6 +13,10 @@ tensorflow = "*"
 sklearn = "*"
 matplotlib = "*"
 pandas = "*"
+flask = "*"
+eventlet = "*"
+pillow = "*"
+python-socketio = "*"
 
 [requires]
 python_version = "3.6"
