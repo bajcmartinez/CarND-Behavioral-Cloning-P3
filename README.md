@@ -1,11 +1,18 @@
 # Behavioral Cloning Project
 
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+
 [//]: # (Image References)
 
+[camera_correction]: ./output/carnd-using-multiple-cameras.png "Camera Correction"
 [dist_original]: ./output/distribution_original.png "Original Distribution"
 [dist_final]: ./output/distribution_final.png "Final Distribution"
-
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+[sample_1]: ./output/0.jpg "Example 1"
+[sample_2]: ./output/1.jpg "Example 2"
+[sample_3]: ./output/2.jpg "Example 3"
+[sample_4]: ./output/3.jpg "Example 4"
+[sample_5]: ./output/4.jpg "Example 5"
+[sample_6]: ./output/5.jpg "Example 6"
 
 Overview
 ---
@@ -19,35 +26,78 @@ The goals / steps of this project are the following:
 * Use the model to drive the vehicle autonomously around the first track in the simulator. The vehicle should remain on the road for an entire loop around the track.
 * Summarize the results with a written report
 
-## Details About Files In This Directory
+## Solution Design
 
-### `data.py`
+### A bit of project history
 
-Builds and loads the data pipeline which consists of the following layers:
+It was a long way before before coming out to the final solution, initially I tried to use transfer learning, utilizing
+VGG19 as a network candidate.
+The network produced good results, but even with transfer learning the training times were a bit on the higher side.
 
-1. Normal distribution of the training dataset based on the steering angle of the car.
+Next thing was to try out the NVIDIA model as published on the paper: [End to End Learning for Self-Driving Cars](https://arxiv.org/pdf/1604.07316.pdf).
+This model produced very similar if not better results than the VGG19 but was able to train much faster. Significant performance 
+improvements without degrading the results. This was definitely a promising solution.
 
-    Here is an image that represents the distribution before and after of the normalization
+So branching out from this model I tried to elaborate an smaller model that would made the task. I was not able to achieve significant
+improvements so decided to go with NVIDIA model, just removing one dense layer, (dense(1000)), which reduced the number of parameters
+without affecting the performance of the network.
+
+By the end of the project I have tried more than 20 variations of the project. One very important point I learn is that 
+the models were only as good as the input data. The data I was passing to the model made significant differences into the 
+overall network performance.
+
+### Data Pipeline
+
+The solutions combines data from 3 different cameras located on the car. One camera located on the left side of the car, 
+next on the right side, and lastly one camera on the front of the car. Each camera recorded the car during the gathering 
+data session which is explained bellow.
+
+#### Data for training
+
+To train the model properly I decided to build my own training data which consisted of the following:
+
+1) Driving track 1 in the default direction for around 3 laps
+2) Driving track 1 in invert direction for around 3 laps
+3) Driving going out of the track to force the car back into the lines. This helps the autonomous vehicle to be prepared for contingencies
+
+With all data already stored, we run our `data` Class which provides us with a generator that will combine all the camera
+images, as well as augmenting data with the form we need it for training.
+
+This involves 3 operations:
+
+1) Normal distribution of the training samples based on the steering angle
+
+Here is an image that represents the distribution before and after of the normalization
     
-    Before:
-    ![alt text][dist_original]
+* Before:
+![alt text][dist_original]
     
-    After:
-    ![alt_text][dist_final]
-    
-    
-2. Flip images horizontally to generate more samples 
+* After:
+![alt_text][dist_final]
 
-This script is used under `model.py` but can be called independently
-```sh
-python data.py
-```
+2) Combine camera data, it is important for combining the data from 3 cameras located in different places to correct for
+the steering angles as its shown on the image bellow
 
-### `model.py`
+![alt_text][camera_correction]
 
-This script is responsible for calling `data.py` to load the data and train the network.
+The correction that was applied was of `0.2f`
 
-Here is the model that was used
+3) Augment data, the process of data augmentation here only consisted of flipping the images horizontally to double the 
+amount of data on the dataset
+
+### Here are some images from the training set:
+
+|                          |                          |
+:-------------------------:|:-------------------------:
+|![alt_text][sample_1]|![alt_text][sample_2]|
+|![alt_text][sample_3]|![alt_text][sample_4]|
+|![alt_text][sample_5]|![alt_text][sample_6]|
+
+As shown we consider both 3 cameras installed in the car for the dataset training
+
+### Final network architecture  
+
+This is the final network architecture used
 
 ```
 _________________________________________________________________
@@ -83,12 +133,28 @@ Non-trainable params: 0
 _________________________________________________________________
 ```
 
-The model is following the NVIDIA model published on the paper: [End to End Learning for Self-Driving Cars](https://arxiv.org/pdf/1604.07316.pdf)
+## Installation
 
-I've also tried different variations of the model, and used transfer learning, here are my findings:
+After cloning the project, please use pipenv to set up your environment with the following command:
+```sh
+pipenv install
+```
 
-1) Using VGG19: This model was an overkill for the task. I could achieve very similar results with much faster training time just by using the NVIDIA model.
-2) Simplified versions of the NVIDIA model: For this particular task a simplified version of the NVIDIA model was enough to run through the track, however to keep it standard I followed the paper. 
+## Project Files
+
+### `data.py`
+
+Builds and loads the data pipeline which consists of the following layers:
+
+This script is used under `model.py` but can be called independently
+
+```sh
+python data.py
+```
+
+### `model.py`
+
+This script is responsible for calling `data.py` to load the data and train the network.
 
 To train the network you would need the `data` folder with the training data from the Udacity Simulator, and run the following command:
 
@@ -154,14 +220,6 @@ python video.py run1 --fps 48
 ```
 
 Will run the video at 48 FPS. The default FPS is 60.
-
-## Data for training
-
-To train the model properly I decided to build my own training data which consisted of the following:
-
-1) Driving track 1 in the default direction for around 3 laps
-2) Driving track 1 in invert direction for around 3 laps
-3) Driving going out of the track to force the car back into the lines. This helps the autonomous vehicle to be prepared for contingencies
 
 ## Overall results 
 
