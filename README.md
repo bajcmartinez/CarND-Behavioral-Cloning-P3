@@ -1,33 +1,15 @@
 # Behavioral Cloning Project
 
+[//]: # (Image References)
+
+[dist_original]: ./output/distribution_original.png "Original Distribution"
+[dist_final]: ./output/distribution_final.png "Final Distribution"
+
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 Overview
 ---
-This repository contains starting files for the Behavioral Cloning Project.
-
-In this project, you will use what you've learned about deep neural networks and convolutional neural networks to clone driving behavior. You will train, validate and test a model using Keras. The model will output a steering angle to an autonomous vehicle.
-
-We have provided a simulator where you can steer a car around a track for data collection. You'll use image data and steering angles to train a neural network and then use this model to drive the car autonomously around the track.
-
-We also want you to create a detailed writeup of the project. Check out the [writeup template](https://github.com/udacity/CarND-Behavioral-Cloning-P3/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup. The writeup can be either a markdown file or a pdf document.
-
-To meet specifications, the project will require submitting five files: 
-* model.py (script used to create and train the model)
-* drive.py (script to drive the car - feel free to modify this file)
-* model.h5 (a trained Keras model)
-* a report writeup file (either markdown or pdf)
-* video.mp4 (a video recording of your vehicle driving autonomously around the track for at least one full lap)
-
-This README file describes how to output the video in the "Details About Files In This Directory" section.
-
-Creating a Great Writeup
----
-A great writeup should include the [rubric points](https://review.udacity.com/#!/rubrics/432/view) as well as your description of how you addressed each point.  You should include a detailed description of the code used (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
+Self driving car behavioral cloning sample built using keras
 
 The Project
 ---
@@ -37,21 +19,82 @@ The goals / steps of this project are the following:
 * Use the model to drive the vehicle autonomously around the first track in the simulator. The vehicle should remain on the road for an entire loop around the track.
 * Summarize the results with a written report
 
-### Dependencies
-This lab requires:
-
-* [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit)
-
-The lab enviroment can be created with CarND Term1 Starter Kit. Click [here](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) for the details.
-
-The following resources can be found in this github repository:
-* drive.py
-* video.py
-* writeup_template.md
-
-The simulator can be downloaded from the classroom. In the classroom, we have also provided sample data that you can optionally use to help train your model.
-
 ## Details About Files In This Directory
+
+### `data.py`
+
+Builds and loads the data pipeline which consists of the following layers:
+
+1. Normal distribution of the training dataset based on the steering angle of the car.
+
+    Here is an image that represents the distribution before and after of the normalization
+    
+    Before:
+    ![alt text][dist_original]
+    
+    After:
+    ![alt_text][dist_final]
+    
+    
+2. Flip images horizontally to generate more samples 
+
+This script is used under `model.py` but can be called independently
+```sh
+python data.py
+```
+
+### `model.py`
+
+This script is responsible for calling `data.py` to load the data and train the network.
+
+Here is the model that was used
+
+```
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+lambda_1 (Lambda)            (None, 160, 320, 3)       0         
+_________________________________________________________________
+cropping2d_1 (Cropping2D)    (None, 90, 320, 3)        0         
+_________________________________________________________________
+conv2d_1 (Conv2D)            (None, 43, 158, 24)       1824      
+_________________________________________________________________
+conv2d_2 (Conv2D)            (None, 20, 77, 36)        21636     
+_________________________________________________________________
+conv2d_3 (Conv2D)            (None, 8, 37, 48)         43248     
+_________________________________________________________________
+conv2d_4 (Conv2D)            (None, 6, 35, 64)         27712     
+_________________________________________________________________
+conv2d_5 (Conv2D)            (None, 4, 33, 64)         36928     
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 8448)              0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 100)               844900    
+_________________________________________________________________
+dense_2 (Dense)              (None, 50)                5050      
+_________________________________________________________________
+dense_3 (Dense)              (None, 10)                510       
+_________________________________________________________________
+dense_4 (Dense)              (None, 1)                 11        
+=================================================================
+Total params: 981,819
+Trainable params: 981,819
+Non-trainable params: 0
+_________________________________________________________________
+```
+
+The model is following the NVIDIA model published on the paper: [End to End Learning for Self-Driving Cars](https://arxiv.org/pdf/1604.07316.pdf)
+
+I've also tried different variations of the model, and used transfer learning, here are my findings:
+
+1) Using VGG19: This model was an overkill for the task. I could achieve very similar results with much faster training time just by using the NVIDIA model.
+2) Simplified versions of the NVIDIA model: For this particular task a simplified version of the NVIDIA model was enough to run through the track, however to keep it standard I followed the paper. 
+
+To train the network you would need the `data` folder with the training data from the Udacity Simulator, and run the following command:
+
+```sh
+python model.py
+```
 
 ### `drive.py`
 
@@ -112,14 +155,18 @@ python video.py run1 --fps 48
 
 Will run the video at 48 FPS. The default FPS is 60.
 
-#### Why create a video
+## Data for training
 
-1. It's been noted the simulator might perform differently based on the hardware. So if your model drives succesfully on your machine it might not on another machine (your reviewer). Saving a video is a solid backup in case this happens.
-2. You could slightly alter the code in `drive.py` and/or `video.py` to create a video of what your model sees after the image is processed (may be helpful for debugging).
+To train the model properly I decided to build my own training data which consisted of the following:
 
-### Tips
-- Please keep in mind that training images are loaded in BGR colorspace using cv2 while drive.py load images in RGB to predict the steering angles.
+1) Driving track 1 in the default direction for around 3 laps
+2) Driving track 1 in invert direction for around 3 laps
+3) Driving going out of the track to force the car back into the lines. This helps the autonomous vehicle to be prepared for contingencies
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+## Overall results 
+
+I'm overall happy with the results, it was a very fun project. It required more time to work on the dataset and gathering the information to train the model than to actually build the model.
+And this is a very important point, for all this projects data is your best friend, learning to gather, analyse and process turns out to be a very valuable skill.
+
+Thanks
 
